@@ -16,6 +16,9 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import word_tokenize
 from nltk.tag import pos_tag
 from tqdm import tqdm
+from sentence_transformers import SentenceTransformer
+import spacy
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
 class Features_extraction():
     def __init__(self):
@@ -58,6 +61,7 @@ class Features_extraction():
         return text
 
     def get_entities(self, text):
+        nlp = spacy.load('en_core_web_sm')
         doc = nlp(text)
         entities = [ent.text for ent in doc.ents]
         return entities
@@ -124,3 +128,19 @@ class Features_extraction():
     def get_tfif_representation(self, data):
         new_statements = self.tfidf_vectorizer.transform(data[self.text_feature])
         return new_statements.toarray()
+    
+    def get_sentence_embedding(self, data):
+        model = SentenceTransformer('all-mpnet-base-v2')
+        sentences = data[self.text_feature].values
+        sentence_embeddings = model.encode(sentences)
+        return sentence_embeddings
+    
+    def get_doc2vec_representation(self, data):
+        data_sentences = data[self.text_feature].tolist()
+        data_tokenized_sentences = [word_tokenize(sentence) for sentence in data_sentences]
+        tagged_data = [TaggedDocument(d, [i]) for i, d in enumerate(data_tokenized_sentences)]
+        model = Doc2Vec(vector_size=100, window=5, min_count=1, workers=4, epochs=10)
+        model.build_vocab(tagged_data)
+        model.train(tagged_data, total_examples=model.corpus_count, epochs=model.epochs)
+        doc2vec_representation = [model.infer_vector(doc.words) for doc in tagged_data]
+        return doc2vec_representation

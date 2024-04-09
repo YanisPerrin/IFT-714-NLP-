@@ -85,7 +85,7 @@ class Preprocessor():
         lemmatizer = WordNetLemmatizer()
 
         # apply the lemmatization
-        lemmatized_tokens = [lemmatizer.lemmatize(token) for token in tokens]
+        lemmatized_tokens = [lemmatizer.lemmatize(token) for token in filtered_tokens]
 
         # add space
         processed_text = ' '.join(lemmatized_tokens)

@@ -1,5 +1,7 @@
 import random
 from tqdm import tqdm
+import nlpaug.augmenter.word as naw
+import pandas as pd
 
 class Data_Augmentation():
     def apply_eda(self, eda, row, alpha=0.2):
@@ -34,7 +36,7 @@ class Data_Augmentation():
 
         return augmented_row
 
-    def augment(self, eda, data, N, alpha):
+    def process_augment_eda(self, eda, data, N, alpha):
         augmented_data = data.copy()
 
         indexes = random.sample(range(len(data)), N)
@@ -45,3 +47,22 @@ class Data_Augmentation():
             augmented_data.loc[len(augmented_data)] = augmented_row
 
         return augmented_data
+    
+    def bert_augmentation(self, text, act="substitute", p=0.3):
+        TOPK=20 #default=100
+        aug_bert = naw.ContextualWordEmbsAug(
+            model_path='distilbert-base-uncased', 
+            device='cuda', aug_p=p,
+            action=act, top_k=TOPK)
+        augmented_text = aug_bert.augment(text)
+        return augmented_text
+    
+    def process_bert_augmentation(self, data, column, act="substitute", p=0.3):
+        augmented_data = data.copy()
+        augmented_texts = []
+        for text in tqdm(data[column], desc="Augmentation des données"):
+            augmented_texts += self.bert_augmentation(text, act, p)
+        augmented_data = augmented_data.drop(column, axis=1)
+        augmented_data[column] = augmented_texts
+        new_data = pd.concat([data, augmented_data]).reset_index(drop=True)
+        return new_data
