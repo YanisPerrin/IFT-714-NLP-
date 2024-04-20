@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import re
 import string
 
@@ -11,7 +9,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 # nltk.download('vader_lexicon')
 # nltk.download('universal_tagset')
 # nltk.download('stopwords')
-import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import word_tokenize
 from nltk.tag import pos_tag

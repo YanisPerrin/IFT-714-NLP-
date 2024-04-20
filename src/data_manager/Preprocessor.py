@@ -16,7 +16,6 @@ from sklearn.preprocessing import LabelEncoder
 # nltk.download('vader_lexicon')
 # nltk.download('universal_tagset')
 # nltk.download('stopwords')
-import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
