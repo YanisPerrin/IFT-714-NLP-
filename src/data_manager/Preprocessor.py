@@ -22,6 +22,9 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.tag import pos_tag
 
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+
 # pip install spacy
 #!python -m spacy download en
 from tqdm import tqdm
@@ -64,6 +67,8 @@ class Preprocessor():
             4: 0 
         }
         self.target = 'labels'
+
+        self.max_sequence_length = 0
         
     # Fonction qui renomme correctement les attributs  
     def rename_columns(self, all_datas):
@@ -93,26 +98,41 @@ class Preprocessor():
         return processed_text
 
     # Fonction pour soustraire l'étiquette actuelle de l'historique de crédit
-    def substraction_credit(self, data):
+    def substraction_credit(self, data, has_credit=True):
         new_dataset = data.copy()
-        for i in range(new_dataset.shape[0]):
-            key = new_dataset[self.target].loc[i]
-            if key == 5: continue
-            col = self.credit_dictionary[key]
-            new_dataset.loc[i,col] -= 1
+        if has_credit:
+            for i in range(new_dataset.shape[0]):
+                key = new_dataset[self.target].loc[i]
+                if key == 5: continue
+                col = self.credit_dictionary[key]
+                new_dataset.loc[i,col] -= 1
         return new_dataset
     
     # Création d'une fonction qui assemble les différentes étapes du prétraitement
-    def preprocessing_target(self, data):
+    def preprocessing_target(self, data, has_credit=True):
         new_dataset = data.copy()
         # encodage de la cible
         le = LabelEncoder()
         new_dataset[self.target] = le.fit_transform(new_dataset[self.target])
 
         # On soustrait l'étiquette actuelle de l'historique de crédit au compte actuelle de cette étiquette via la fonction substraction_credit
-        return self.substraction_credit(new_dataset)
+        return self.substraction_credit(new_dataset, has_credit)
     
     def tranform_into_binary_classification(self, data):
         dataset = data.copy()
-        dataset[self.target] = dataset[self.taregt].map(binary_map)
+        dataset[self.target] = dataset[self.target].map(self.binary_map)
         return dataset
+    
+    def fit_keras_tokenizer(self, data, column):
+        self.tokenizer = Tokenizer()
+        self.tokenizer.fit_on_texts(data[column])
+
+    def get_padded_senquences(self, data, column):
+        sequences = self.tokenizer.texts_to_sequences(data[column])
+        if data.name == 'Entrainement':
+            self.max_sequence_length = max(len(seq) for seq in sequences)
+        padded_sequences = pad_sequences(sequences, maxlen=self.max_sequence_length, padding='post')
+        return padded_sequences
+    
+    def get_max_senquence_length(self):
+        return self.max_sequence_length
